@@ -1,56 +1,55 @@
 # SPSiteJobManager
 
-## Description
+## Overview
 
-Ce dépôt contient une collection de scripts PowerShell pour faciliter l'administration et la gestion des sites SharePoint. Chaque script est conçu pour automatiser et simplifier différentes tâches administratives, rendant le processus plus efficace et moins sujet aux erreurs humaines.
+This repository contains a PowerShell script designed to fetch and manage storage information of SharePoint sites. It's useful for administrators who need to monitor and manage SharePoint storage data efficiently.
 
-## Caractéristiques
+## Files Description
 
-- Exportation des listes de sites SharePoint au format CSV.
-- Gestion des jobs en parallèle pour optimiser les performances.
-- Guide des meilleures pratiques pour la maintenance et l'amélioration des scripts.
+- [Export-SharePointSitesList.ps1](Export-SharePointSitesList.ps1): This script exports a list of SharePoint sites along with their storage details.
+- [SPSiteJobManager.ps1](SPSiteJobManager.ps1): Manages jobs related to SharePoint sites, ensuring that storage information is up-to-date and accurate.
 
-## Pour commencer
+## Getting Started
 
-Pour utiliser ces scripts, clonez d'abord ce dépôt sur votre machine locale en utilisant la commande suivante :
+To use these scripts, you should have administrative access to the SharePoint sites you wish to manage. Ensure that you have the necessary permissions to execute scripts on your system.
 
-```sh
-git clone git@github.com:Ishak-rav/SPSiteJobManager.git
+### Prerequisites
+
+- PowerShell 5.1 or higher
+- SharePoint Online Management Shell
+
+### Installation
+
+1. Clone the repository to your local machine.
+2. Ensure that the execution policy for PowerShell scripts is appropriately set.
+3. Install the SharePoint Online Management Shell if not already present.
+
+### Usage
+
+1. Navigate to the directory where the scripts are located.
+2. Execute the scripts with the necessary parameters. For example:
+
+```powershell
+.\Export-SharePointSitesList.ps1
 ```
-
-## Prérequis
-
-- PowerShell 5.1 ou supérieur
-- Droits administratifs sur votre environnement SharePoint
-
-## Installation
-
-Aucune installation spécifique n'est nécessaire. Il suffit de télécharger les scripts et de les exécuter avec PowerShell.
-
-## Utilisation
-
-Pour exécuter un script, ouvrez PowerShell et naviguez jusqu'au dossier contenant les scripts. Exécutez ensuite la commande suivante :
 
 ```powershell
 .\SPSiteJobManager.ps1
 ```
 
-## Contribuer
+## Contributing
 
-Les contributions à ce projet sont les bienvenues ! Pour des directives sur la manière de contribuer, veuillez consulter le fichier `CONTRIBUTING.md`.
-
-## Support
-
-Si vous rencontrez des problèmes ou avez des questions, n'hésitez pas à ouvrir une issue dans ce dépôt GitHub.
+Contributions to this project are welcome. Please feel free to fork the repository, make changes, and submit pull requests.
 
 ## License
 
-Ce projet est distribué sous la licence MIT. Consultez le fichier `LICENSE` pour plus de détails.
+This project is licensed under the terms of the [LICENSE](LICENSE) file included in the repository.
 
-## Auteurs
+## Acknowledgments
 
-- Ishak Chennouf - Apprenti développeur - Ishak-rav
+- Thanks to all the contributors who have invested their time in improving this script.
+- Special thanks to the SharePoint community for the continuous support.
 
-## Remerciements
+## Contact
 
-Un merci spécial à ceux qui ont contribué au projet par leurs idées ou leur support.
+For any queries or suggestions, please feel free to contact [Me](mailto:chennoufishak@gmail.com).

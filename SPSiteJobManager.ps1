@@ -1,70 +1,69 @@
-# Définition des variables de base
+# Base variables definition
 $startTime = Get-Date
 $startTimeStr = $startTime.ToString("dd-MM-yyyy HH:mm:ss")
 
 $path = "C:\Users\ichennouf\OneDrive - ELIADIS\Desktop\scripts\Resultat\"
-$cheminCsv = "${path}listeSites.csv"
+$csvPath = "${path}listOfSites.csv"
 $basePath = "${path}ExportCSV\"
 
-# Limite pour le nombre de jobs parallèles
+# Limit for the number of parallel jobs
 $jobLimit = 10
 
-# Liste pour suivre les jobs
+# List to track the running jobs
 $runningJobs = @()
 
-# Initialisation des listes pour stocker les informations
+# Initializing lists to store information
 $allSites = @()
 $allLibraries = @()
 $allFolders = @()
 $allFiles = @()
 
-Write-Host "-------------------------- Début du script à $startTimeStr --------------------------"
+Write-Host "-------------------------- Script start at $startTimeStr --------------------------"
 
-# Importation du CSV
+# Importing CSV
 try {
-    $listeSites = Import-Csv -Path $cheminCsv
-    Write-Host "Importation du CSV réussie."
+    $listeSites = Import-Csv -Path $csvPath
+    Write-Host "CSV import successful."
 }
 catch [System.IO.IOException] {
-    Write-Host "Erreur d'accès au fichier CSV : $_"
+    Write-Host "CSV file access error: $_"
     exit
 }
 catch [System.TimeoutException] {
-    Write-Host "Le délai d'attente de l'opération a expiré : $_"
+    Write-Host "Operation timed out: $_"
     exit
 }
 catch {
-    Write-Host "Erreur générale lors de l'importation du CSV : $_"
+    Write-Host "General error when importing CSV: $_"
     exit
 }
 
-# On demande les identifiants une seule fois
+# Asking for credentials once
 $cred = Get-Credential
 if (-not $cred) {
-    Write-Host "Aucun identifiant fourni. Le script va se terminer."
+    Write-Host "No identifier provided. The script will end."
     exit
 }
 
-# On lance un job pour chaque site
+# Starting a job for each site
 foreach ($site in $listeSites) {
 
-    # On lance un job si le nombre de jobs en cours est inférieur à la limite
+    # Launch a job if the number of jobs in progress is less than the limit
     while ($runningJobs.Count -ge $jobLimit) {
-        # On attend qu'un job se termine
+        # Waiting for a job to finish
         $completedJob = Wait-Job -Job $runningJobs -Any
         $runningJobs = $runningJobs | Where-Object { $_.Id -ne $completedJob.Id }
     }
 
-    Write-Host "Début du traitement du site : $($site.Url)"
+    Write-Host "Start of site processing : $($site.Url)"
 
-    # On lance un job par site
     $job = Start-Job -ScriptBlock {
         function Get-FolderSize {
             param (
                 [Parameter(Mandatory = $true)]
                 $folderFiles
             )
-            # Logique pour calculer la taille du dossier
+            # Logic to calculate the folder size
             $totalSize = 0
             foreach ($file in $folderFiles) {
                 if ($file.FileSystemObjectType -eq "File") {
@@ -74,7 +73,7 @@ foreach ($site in $listeSites) {
             return $totalSize
         }
 
-        # Fonction pour traiter chaque site SharePoint
+        # Function to process each SharePoint site
         function ProcessSite {
             param (
                 [Parameter(Mandatory = $true)]
@@ -86,7 +85,7 @@ foreach ($site in $listeSites) {
 
             $pageSize = 1000
 
-            # Initialisation des listes locales
+            # Initializing local lists
             $localSites = @()
             $localLibraries = @()
             $localFolders = @()
@@ -94,13 +93,13 @@ foreach ($site in $listeSites) {
 
             try {
                 try {
-                    # Connexion à chaque site avec les identifiants
-                    $connectionSite = Connect-PnPOnline -Url $site.Url -Credentials $cred -ReturnConnection
+                    # Connection to each site
+                    $siteConnection = Connect-PnPOnline -Url $site.Url -Credentials $cred -ReturnConnection
 
-                    # On récupère les informations du site
-                    $web = Get-PnPWeb -Connection $connectionSite
+                    # Retrieving the information from the site
+                    $web = Get-PnPWeb -Connection $siteConnection
 
-                    # Créer un objet personnalisé pour les informations du site
+                    # Creating custom object for site information
                     $siteInfo = [PSCustomObject]@{
                         Title   = $web.Title
                         SiteUrl = $web.Url
@@ -109,39 +108,39 @@ foreach ($site in $listeSites) {
                     $localSites += $siteInfo
                 }
                 catch [System.Net.WebException] {
-                    Write-Host "Erreur de réseau lors de la connexion à SharePoint : $_"
+                    Write-Host "Network error connecting to SharePoint: $_"
                 }
                 catch [Microsoft.SharePoint.Client.IdcrlException] {
-                    Write-Host "Erreur d'authentification SharePoint : $_"
+                    Write-Host "SharePoint authentication error: $_"
                 }
                 catch {
-                    Write-Host "Erreur inconnue lors de la connexion à SharePoint : $_"
+                    Write-Host "Unknown error connecting to SharePoint: $_"
                 }
 
                 try {
-                    # On récupère toutes les bibliothèques de documents du site
-                    $bibliotheques = Get-PnPList -Connection $connectionSite | Where-Object { $_.BaseTemplate -eq 101 }
+                    # Retrieving all the document libraries on the site
+                    $libraries = Get-PnPList -Connection $siteConnection | Where-Object { $_.BaseTemplate -eq 101 }
 
-                    foreach ($bibliotheque in $bibliotheques) {
-                        # On ajoute les informations de la bibliothèque à la liste $allLibraries
+                    foreach ($library in $libraries) {
+                        # Adding the library information to the $allLibraries list
                         $libraryInfo = [PSCustomObject]@{
                             SiteUrl      = $site.Url
-                            LibraryTitle = $bibliotheque.Title
-                            TotalSize    = 0  # Initialisation de la taille totale de la bibliothèque
-                            FileCount    = 0  # Initialisation du nombre de fichiers dans la bibliothèque
+                            LibraryTitle = $library.Title
+                            TotalSize    = 0  # Initializing the total library size
+                            FileCount    = 0  # Initializing the number of files in the library
                         }
                         $localLibraries += $libraryInfo
 
                         try {
-                            # On récupère tous les fichiers et dossiers de chaque bibliothèque
-                            $listItems = Get-PnPListItem -List $bibliotheque -PageSize $pageSize -Connection $ConnectionSite
+                            # Recovering all the files and folders from each library
+                            $listItems = Get-PnPListItem -List $library -PageSize $pageSize -Connection $siteConnection
 
                             foreach ($item in $listItems) {
                                 if ($item.FileSystemObjectType -eq "File") {
-                                    # Si l'élément est un fichier
+                                    # If the item is a file
                                     $fileInfo = [PSCustomObject]@{
                                         SiteUrl       = $site.Url
-                                        Library       = $bibliotheque.Title
+                                        Library       = $library.Title
                                         FileName      = $item.FieldValues.FileLeafRef
                                         FilePath      = $item.FieldValues.FileDirRef
                                         FileSize      = $item.FieldValues.File_x0020_Size
@@ -151,24 +150,24 @@ foreach ($site in $listeSites) {
                                     }
                                     $localFiles += $fileInfo
 
-                                    # On ajoute la taille du fichier à la taille totale de la bibliothèque
+                                    # Adding the file size to the total size of the library
                                     $libraryInfo.TotalSize += $item.FieldValues.File_x0020_Size
 
-                                    # On met à jour le nombre de fichiers dans la bibliothèque
+                                    # Updating the number of files in the library
                                     $libraryInfo.FileCount++
                                 }
                                 elseif ($item.FileSystemObjectType -eq "Folder") {
                                     try {
-                                        # Si l'élément est un dossier
-                                        $folderFiles = Get-PnPListItem -List $bibliotheque -Folder $item.FieldValues.FileDirRef -Connection $connectionSite
+                                        # If the item is a folder
+                                        $folderFiles = Get-PnPListItem -List $library -Folder $item.FieldValues.FileDirRef -Connection $siteConnection
 
-                                        # On calcule la taille du dossier
+                                        # Calculating the size of the file
                                         $folderSize = Get-FolderSize -folderFiles $folderFiles
 
-                                        # On ajoute les informations du dossier à la liste $allFolders
+                                        # Adding the folder information to the $allFolders list
                                         $folderInfo = [PSCustomObject]@{
                                             SiteUrl      = $site.Url
-                                            Library      = $bibliotheque.Title
+                                            Library      = $library.Title
                                             FolderName   = $item.FieldValues.FileLeafRef
                                             FolderPath   = $item.FieldValues.FileDirRef
                                             FolderSize   = $folderSize
@@ -177,31 +176,31 @@ foreach ($site in $listeSites) {
                                         $localFolders += $folderInfo
                                     }
                                     catch {
-                                        Write-Host "Erreur lors du traitement des dossiers du site $($site.Url) : $_"
+                                        Write-Host "Error processing site folders $($site.Url) : $_"
                                     }
                                 }
                             }
                         }
                         catch {
-                            Write-Host "Erreur lors de la récupération des fichiers et dossiers du site $($site.Url) : $_"
+                            Write-Host "Error retrieving files and folders from site $($site.Url) : $_"
                         }
                     }
                 }
                 catch {
-                    Write-Host "Erreur lors de la récupération des bibliothèques de documents du site $($site.Url) : $_"
+                    Write-Host "Error retrieving document libraries from site $($site.Url) : $_"
                 }
             }
             catch [Microsoft.SharePoint.Client.ClientRequestException] {
-                Write-Host "Erreur de requête SharePoint du site $($site.Url) : $_"
+                Write-Host "SharePoint site query error $($site.Url) : $_"
             }
             catch [System.Net.WebException] {
-                Write-Host "Erreur de réseau lors de la connexion à SharePoint du site $($site.Url) : $_"
+                Write-Host "Network error connecting to SharePoint site $($site.Url) : $_"
             }
             catch {
-                Write-Host "Erreur inconnue lors de la connexion ou de la récupération des données du site $($site.Url) : $_"
+                Write-Host "Unknown error connecting or retrieving site data $($site.Url) : $_"
             }
 
-            # On retourne un objet contenant toutes les listes
+            # Returning an object containing all the lists
             return @{
                 Sites     = $localSites
                 Libraries = $localLibraries
@@ -210,34 +209,34 @@ foreach ($site in $listeSites) {
             }
         }
 
-        # On exécute la fonction ProcessSite
+        # Executing the ProcessSite function
         ProcessSite -site $args[0] -cred $args[1]
     } -ArgumentList $site, $cred
     $runningJobs += $job
 }
 
-Write-Host "Attente de la fin de tous les jobs..."
-# On attend la fin de tous les jobs
+Write-Host "Waiting for all jobs to finish..."
+# Waiting for all jobs to complete
 Get-Job | Wait-Job
-Write-Host "Tous les jobs sont terminés."
+Write-Host "All jobs are completed"
 
-# On récupère les résultats de chaque job
+# Retrieving results from each job
 $jobs = Get-Job
 
-# Traitement des jobs
+# Job processing
 foreach ($job in $jobs) {
 
-    Write-Host "Traitement des résultats du job $($job.Id)"
+    Write-Host "Processing job results $($job.Id)"
     $result = Receive-Job -Job $job
 
     if ($job.State -eq "Failed") {
-        Write-Host "Le job $($job.Id) a échoué."
+        Write-Host "Job $($job.Id) failed"
         continue
     }
 
-    # On vérifie que le résultat n'est pas null
+    # Checking that the result is not null
     if ($result) {
-        # On ajoute les résultats aux listes globales si elles sont présentes, indépendamment les unes des autres
+        # Adding the results to the global lists if they are present, independently of each other
         if ($result.Sites) {
             $allSites += $result.Sites
         }
@@ -252,17 +251,17 @@ foreach ($job in $jobs) {
         }
     }
     else {
-        Write-Host "Aucune donnée reçue ou job a rencontré une erreur pour le job $($job.Id)."
+        Write-Host "No data received or job encountered an error for job $($job.Id)"
     }
 }
 
 
-# On nettoie les jobs
+# Cleaning up the jobs
 Get-Job | Remove-Job
 
-Write-Host "Début d'exportation des fichiers CSV"
+Write-Host "Starting CSV files export"
 
-# On exporte les listes en fichiers CSV
+# Exporting lists to CSV files
 try {
     $allSites | Export-Csv -Path "${basePath}Sites_tenantTest.csv" -NoTypeInformation
     $allLibraries | Export-Csv -Path "${basePath}Libraries_tenantTest.csv" -NoTypeInformation
@@ -270,17 +269,17 @@ try {
     $allFolders | Export-Csv -Path "${basePath}Folders_tenantTest.csv" -NoTypeInformation
 }
 catch [System.IO.IOException] {
-    Write-Host "Erreur d'accès au fichier lors de l'exportation : $_"
+    Write-Host "File access error during export: $_"
 }
 catch {
-    Write-Host "Erreur générale lors de l'exportation des données vers CSV : $_"
+    Write-Host "General error when exporting data to CSV: $_"
 }
 
-Write-Host "Fin d'exportation des fichiers CSV"
+Write-Host "CSV files export finished"
 
 $endTime = Get-Date
 $endTimeStr = $endTime.ToString("dd-MM-yyyy HH:mm:ss")
-Write-Host "Heure de fin du script : $endTimeStr"
+Write-Host "Script end time: $endTimeStr"
 $duration = $endTime - $startTime
-$durationStr = "{0} heures, {1} minutes, {2} secondes" -f $duration.Hours, $duration.Minutes, $duration.Seconds
-Write-Host "-------------------------- Durée d'exécution du script : $durationStr --------------------------"
+$durationStr = "{0} hours, {1} minutes, {2} seconds" -f $duration.Hours, $duration.Minutes, $duration.Seconds
+Write-Host "-------------------------- Script execution duration: $durationStr --------------------------"
