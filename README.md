@@ -1,14 +1,13 @@
 # SPSiteJobManager
 
 ## Overview
+
 This repository contains a PowerShell script designed to fetch and manage storage information of SharePoint sites. It's useful for administrators who need to monitor and manage SharePoint storage data efficiently.
 
 ## Files Description
 
-- `Export-SharePointSitesList.ps1`: This script exports a list of SharePoint sites along with their storage details.
-- `SPSiteJobManager.ps1`: Manages jobs related to SharePoint sites, ensuring that storage information is up-to-date and accurate.
-- `LICENSE`: Contains the terms and conditions for using, copying, modifying, and distributing this software.
-- `README.md`: Provides an overview, instructions, and other essential information about the project.
+- [Export-SharePointSitesList.ps1](Export-SharePointSitesList.ps1): This script exports a list of SharePoint sites along with their storage details.
+- [SPSiteJobManager.ps1](SPSiteJobManager.ps1): Manages jobs related to SharePoint sites, ensuring that storage information is up-to-date and accurate.
 
 ## Getting Started
 
@@ -32,6 +31,9 @@ To use these scripts, you should have administrative access to the SharePoint si
 
 ```powershell
 .\Export-SharePointSitesList.ps1
+```
+
+```powershell
 .\SPSiteJobManager.ps1
 ```
 
