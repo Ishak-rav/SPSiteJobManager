@@ -1,9 +1,9 @@
-# Connexion interactive au service SharePoint pour obtenir la liste des sites
+# Interactive connection to SharePoint service to obtain the list of sites
 $SiteAdminURL = "https://m365x52471717-admin.sharepoint.com"
 $adminConnection = Connect-PnPOnline -Url $SiteAdminURL -Interactive -ReturnConnection
 
-# Récupérer la liste de tous les sites SharePoint Online
-$listeSites = Get-PnPTenantSite -Connection $adminConnection
+# Retrieve the list of all SharePoint Online sites
+$sitesList = Get-PnPTenantSite -Connection $adminConnection
 
-# Exporter les URL des sites dans un fichier CSV
-$listeSites | Select-Object Url | Export-Csv -Path "C:\Users\ichennouf\OneDrive - ELIADIS\Desktop\scripts\Resultat\listeSites.csv" -NoTypeInformation
+# Export the URLs of the sites to a CSV file
+$sitesList | Select-Object Url | Export-Csv -Path "C:\Users\ichennouf\OneDrive - ELIADIS\Desktop\scripts\Resultat\listOfSites.csv" -NoTypeInformation
