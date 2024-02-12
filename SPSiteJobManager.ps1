@@ -3,7 +3,7 @@ $startTime = Get-Date
 $startTimeStr = $startTime.ToString("dd-MM-yyyy HH:mm:ss")
 
 $path = "C:\Users\ichennouf\OneDrive - ELIADIS\Desktop\scripts\Resultat\"
-$csvPath = "${path}listOfSites.csv"
+$csvPath = "${path}listSites.csv"
 $basePath = "${path}ExportCSV\"
 
 # Limit for the number of parallel jobs
