@@ -1,4 +1,5 @@
 # Base variables definition
+$moduleName = 'PnP.PowerShell'
 $startTime = Get-Date
 $startTimeStr = $startTime.ToString("dd-MM-yyyy HH:mm:ss")
 
@@ -18,6 +19,21 @@ $allLibraries = @()
 $allFiles = @()
 
 Write-Host "-------------------------- Script start at $startTimeStr --------------------------"
+
+# Check if the module is available
+if (-not (Get-Module -ListAvailable -Name $moduleName)) {
+    Write-Host "The module '$moduleName' is not installed. Attempting to install..."
+    # Install the module for the current user
+    Install-Module -Name $moduleName -Scope CurrentUser -Force -AllowClobber
+    Write-Host "Module '$moduleName' installed successfully."
+
+    # Import the module
+    Import-Module $moduleName
+    Write-Host "Module '$moduleName' imported successfully."
+}
+else {
+    Write-Host "Module '$moduleName' is already installed."
+}
 
 # Importing CSV
 try {
