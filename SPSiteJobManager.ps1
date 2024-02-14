@@ -15,7 +15,6 @@ $runningJobs = @()
 # Initializing lists to store information
 $allSites = @()
 $allLibraries = @()
-$allFolders = @()
 $allFiles = @()
 
 Write-Host "-------------------------- Script start at $startTimeStr --------------------------"
@@ -58,20 +57,6 @@ foreach ($site in $listeSites) {
     Write-Host "Start of site processing : $($site.Url)"
 
     $job = Start-Job -ScriptBlock {
-        function Get-FolderSize {
-            param (
-                [Parameter(Mandatory = $true)]
-                $folderFiles
-            )
-            # Logic to calculate the folder size
-            $totalSize = 0
-            foreach ($file in $folderFiles) {
-                if ($file.FileSystemObjectType -eq "File") {
-                    $totalSize += $file.FieldValues.File_x0020_Size
-                }
-            }
-            return $totalSize
-        }
 
         # Function to process each SharePoint site
         function ProcessSite {
@@ -88,7 +73,6 @@ foreach ($site in $listeSites) {
             # Initializing local lists
             $localSites = @()
             $localLibraries = @()
-            $localFolders = @()
             $localFiles = @()
 
             try {
@@ -136,49 +120,23 @@ foreach ($site in $listeSites) {
                             $listItems = Get-PnPListItem -List $library -PageSize $pageSize -Connection $siteConnection
 
                             foreach ($item in $listItems) {
-                                if ($item.FileSystemObjectType -eq "File") {
-                                    # If the item is a file
-                                    $fileInfo = [PSCustomObject]@{
-                                        SiteUrl       = $site.Url
-                                        Library       = $library.Title
-                                        FileName      = $item.FieldValues.FileLeafRef
-                                        FilePath      = $item.FieldValues.FileDirRef
-                                        FileSize      = $item.FieldValues.File_x0020_Size
-                                        CreatedDate   = $item.FieldValues.Created
-                                        ModifiedDate  = $item.FieldValues.Modified
-                                        FileExtension = [System.IO.Path]::GetExtension($item.FieldValues.FileLeafRef)
-                                    }
-                                    $localFiles += $fileInfo
-
-                                    # Adding the file size to the total size of the library
-                                    $libraryInfo.TotalSize += $item.FieldValues.File_x0020_Size
-
-                                    # Updating the number of files in the library
-                                    $libraryInfo.FileCount++
+                                $fileInfo = [PSCustomObject]@{
+                                    SiteUrl       = $site.Url
+                                    Library       = $library.Title
+                                    FileName      = $item.FieldValues.FileLeafRef
+                                    FilePath      = $item.FieldValues.FileDirRef
+                                    FileSize      = $item.FieldValues.File_x0020_Size
+                                    CreatedDate   = $item.FieldValues.Created
+                                    ModifiedDate  = $item.FieldValues.Modified
+                                    FileExtension = [System.IO.Path]::GetExtension($item.FieldValues.FileLeafRef)
                                 }
-                                elseif ($item.FileSystemObjectType -eq "Folder") {
-                                    try {
-                                        # If the item is a folder
-                                        $folderFiles = Get-PnPListItem -List $library -Folder $item.FieldValues.FileDirRef -Connection $siteConnection
+                                $localFiles += $fileInfo
 
-                                        # Calculating the size of the file
-                                        $folderSize = Get-FolderSize -folderFiles $folderFiles
+                                # Adding the file size to the total size of the library
+                                $libraryInfo.TotalSize += $item.FieldValues.File_x0020_Size
 
-                                        # Adding the folder information to the $allFolders list
-                                        $folderInfo = [PSCustomObject]@{
-                                            SiteUrl      = $site.Url
-                                            Library      = $library.Title
-                                            FolderName   = $item.FieldValues.FileLeafRef
-                                            FolderPath   = $item.FieldValues.FileDirRef
-                                            FolderSize   = $folderSize
-                                            FolderLength = ($folderFiles | Where-Object { $_.FileSystemObjectType -eq "File" }).Count + $folderFiles.Count
-                                        }
-                                        $localFolders += $folderInfo
-                                    }
-                                    catch {
-                                        Write-Host "Error processing site folders $($site.Url) : $_"
-                                    }
-                                }
+                                # Updating the number of files in the library
+                                $libraryInfo.FileCount++
                             }
                         }
                         catch {
@@ -205,7 +163,6 @@ foreach ($site in $listeSites) {
                 Sites     = $localSites
                 Libraries = $localLibraries
                 Files     = $localFiles
-                Folders   = $localFolders
             }
         }
 
@@ -246,9 +203,6 @@ foreach ($job in $jobs) {
         if ($result.Files) {
             $allFiles += $result.Files
         }
-        if ($result.Folders) {
-            $allFolders += $result.Folders
-        }
     }
     else {
         Write-Host "No data received or job encountered an error for job $($job.Id)"
@@ -266,7 +220,6 @@ try {
     $allSites | Export-Csv -Path "${basePath}Sites_tenantTest.csv" -NoTypeInformation
     $allLibraries | Export-Csv -Path "${basePath}Libraries_tenantTest.csv" -NoTypeInformation
     $allFiles | Export-Csv -Path "${basePath}Files_tenantTest.csv" -NoTypeInformation
-    $allFolders | Export-Csv -Path "${basePath}Folders_tenantTest.csv" -NoTypeInformation
 }
 catch [System.IO.IOException] {
     Write-Host "File access error during export: $_"
