@@ -1,4 +1,5 @@
 # Base variables definition
+$moduleName = "PnP.PowerShell"
 $startTime = Get-Date
 $startTimeStr = $startTime.ToString("dd-MM-yyyy HH:mm:ss")
 
@@ -19,6 +20,48 @@ $allFolders = @()
 $allFiles = @()
 
 Write-Host "-------------------------- Script start at $startTimeStr --------------------------"
+
+# Function to check if the module is available
+function ModuleChecker {
+    param (
+        [string]$ModuleName
+    )
+    return Get-Module -ListAvailable -Name $ModuleName
+}
+
+# Function to install the module
+function Install-ModuleIfNeeded {
+    param (
+        [string]$ModuleName
+    )
+    if (-not (ModuleChecker -ModuleName $ModuleName)) {
+        Write-Host "The module '$ModuleName' is not installed. Attempting to install..."
+        Install-Module -Name $ModuleName -Scope CurrentUser -Force -AllowClobber
+        Write-Host "Module '$ModuleName' installed successfully."
+    }
+    else {
+        Write-Host "Module '$ModuleName' is already installed."
+    }
+}
+
+# Function to import the module
+function Import-ModuleIfNeeded {
+    param (
+        [string]$ModuleName
+    )
+    if (-not (ModuleChecker -ModuleName $ModuleName)) {
+        Write-Host "Importing module '$ModuleName'..."
+        Import-Module $ModuleName
+        Write-Host "Module '$ModuleName' imported successfully."
+    }
+    else {
+        Write-Host "Module '$ModuleName' is already imported."
+    }
+}
+
+# Ensure module is installed and imported
+Install-ModuleIfNeeded -ModuleName $moduleName
+Import-ModuleIfNeeded -ModuleName $moduleName
 
 # Importing CSV
 try {
