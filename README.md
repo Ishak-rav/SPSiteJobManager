@@ -43,7 +43,11 @@ Contributions to this project are welcome. Please feel free to fork the reposito
 
 ## License
 
-This project is licensed under the terms of the [LICENSE](LICENSE) file included in the repository.
+This project is licensed under the terms of the [LICENSE](legal/LICENSE) file included in the repository.
+
+## Code of conduct
+
+Please refer to the [CODE_OF_CONDUCT](legal/CODE_OF_CONDUCT.md) file included in the repository.
 
 ## Acknowledgments
 
