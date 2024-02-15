@@ -6,4 +6,4 @@ $adminConnection = Connect-PnPOnline -Url $SiteAdminURL -Interactive -ReturnConn
 $sitesList = Get-PnPTenantSite -Connection $adminConnection
 
 # Export the URLs of the sites to a CSV file
-$sitesList | Select-Object Url | Export-Csv -Path "C:\Users\ichennouf\OneDrive - ELIADIS\Desktop\scripts\Resultat\listOfSites.csv" -NoTypeInformation
+$sitesList | Select-Object Url | Export-Csv -Path "C:\Users\ichennouf\OneDrive - ELIADIS\Desktop\scripts\Resultat\listSites.csv" -NoTypeInformation
