@@ -2,8 +2,8 @@
 $startTime = Get-Date
 $startTimeStr = $startTime.ToString("dd-MM-yyyy HH:mm:ss")
 
-$path = "C:\Users\ichennouf\OneDrive - ELIADIS\Desktop\scripts\Resultat\"
-$csvPath = "${path}listSites.csv"
+$path = "<YourScriptPath>\Result\"
+$csvPath = "${path}sitesList.csv"
 $basePath = "${path}ExportCSV\"
 
 # Limit for the number of parallel jobs
@@ -263,10 +263,10 @@ Write-Host "Starting CSV files export"
 
 # Exporting lists to CSV files
 try {
-    $allSites | Export-Csv -Path "${basePath}Sites_tenantTest.csv" -NoTypeInformation
-    $allLibraries | Export-Csv -Path "${basePath}Libraries_tenantTest.csv" -NoTypeInformation
-    $allFiles | Export-Csv -Path "${basePath}Files_tenantTest.csv" -NoTypeInformation
-    $allFolders | Export-Csv -Path "${basePath}Folders_tenantTest.csv" -NoTypeInformation
+    $allSites | Export-Csv -Path "${basePath}SitesExport.csv" -NoTypeInformation
+    $allLibraries | Export-Csv -Path "${basePath}LibrariesExport.csv" -NoTypeInformation
+    $allFiles | Export-Csv -Path "${basePath}FilesExport.csv" -NoTypeInformation
+    $allFolders | Export-Csv -Path "${basePath}FoldersExport.csv" -NoTypeInformation
 }
 catch [System.IO.IOException] {
     Write-Host "File access error during export: $_"
