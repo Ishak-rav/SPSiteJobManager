@@ -3,8 +3,8 @@ $moduleName = 'PnP.PowerShell'
 $startTime = Get-Date
 $startTimeStr = $startTime.ToString("dd-MM-yyyy HH:mm:ss")
 
-$path = "<YourScriptPath>\Result\"
-$csvPath = "${path}sitesList.csv"
+$path = "<YourScriptPath>\"
+$csvPath = "${path}listSites.csv"
 $basePath = "${path}ExportCSV\"
 
 # Limit for the number of parallel jobs
