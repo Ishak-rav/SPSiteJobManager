@@ -1,5 +1,5 @@
 # Base variables definition
-$moduleName = "PnP.PowerShell"
+$moduleName = 'PnP.PowerShell'
 $startTime = Get-Date
 $startTimeStr = $startTime.ToString("dd-MM-yyyy HH:mm:ss")
 
