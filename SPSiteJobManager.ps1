@@ -21,7 +21,7 @@ $allFiles = @()
 Write-Host "-------------------------- Script start at $startTimeStr --------------------------"
 
 # Function to check if the module is available
-function CheckModuleAvailable {
+function ModuleChecker {
     param (
         [string]$ModuleName
     )
@@ -33,7 +33,7 @@ function Install-ModuleIfNeeded {
     param (
         [string]$ModuleName
     )
-    if (-not (CheckModuleAvailable -ModuleName $ModuleName)) {
+    if (-not (ModuleChecker -ModuleName $ModuleName)) {
         Write-Host "The module '$ModuleName' is not installed. Attempting to install..."
         Install-Module -Name $ModuleName -Scope CurrentUser -Force -AllowClobber
         Write-Host "Module '$ModuleName' installed successfully."
@@ -48,7 +48,7 @@ function Import-ModuleIfNeeded {
     param (
         [string]$ModuleName
     )
-    if (-not (CheckModuleAvailable -ModuleName $ModuleName)) {
+    if (-not (ModuleChecker -ModuleName $ModuleName)) {
         Write-Host "Importing module '$ModuleName'..."
         Import-Module $ModuleName
         Write-Host "Module '$ModuleName' imported successfully."
