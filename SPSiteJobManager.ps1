@@ -3,15 +3,17 @@ $moduleName = 'PnP.PowerShell'
 $startTime = Get-Date
 $startTimeStr = $startTime.ToString("dd-MM-yyyy HH:mm:ss")
 
-$path = "C:\Users\ichennouf\OneDrive - ELIADIS\Desktop\scripts\Resultat\"
-$csvPath = "${path}listSites.csv"
-$basePath = "${path}ExportCSV\"
+$path = "C:\Users\ichennouf\OneDrive - ELIADIS\Desktop\"
+$exportPath = "${path}scripts\Resultat\"
+$csvPath = "${exportPath}listSites.csv"
+$basePath = "${exportPath}ExportCSV\"
 
-# Limit for the number of parallel jobs
-$jobLimit = 10
-
-# List to track the running jobs
-$runningJobs = @()
+# Importing functions
+. "${path}SPSiteJobManager\ModuleChecker.ps1"
+. "${path}SPSiteJobManager\InstallModuleIfNeeded.ps1"
+. "${path}SPSiteJobManager\ImportModuleIfNeeded.ps1"
+. "${path}SPSiteJobManager\ProcessSite.ps1"
+. "${path}SPSiteJobManager\GetCredentialWithRetries.ps1"
 
 # Initializing lists to store information
 $allSites = @()
@@ -19,44 +21,6 @@ $allLibraries = @()
 $allFiles = @()
 
 Write-Host "-------------------------- Script start at $startTimeStr --------------------------"
-
-# Function to check if the module is available
-function ModuleChecker {
-    param (
-        [string]$ModuleName
-    )
-    return Get-Module -ListAvailable -Name $ModuleName
-}
-
-# Function to install the module
-function Install-ModuleIfNeeded {
-    param (
-        [string]$ModuleName
-    )
-    if (-not (ModuleChecker -ModuleName $ModuleName)) {
-        Write-Host "The module '$ModuleName' is not installed. Attempting to install..."
-        Install-Module -Name $ModuleName -Scope CurrentUser -Force -AllowClobber
-        Write-Host "Module '$ModuleName' installed successfully."
-    }
-    else {
-        Write-Host "Module '$ModuleName' is already installed."
-    }
-}
-
-# Function to import the module
-function Import-ModuleIfNeeded {
-    param (
-        [string]$ModuleName
-    )
-    if (-not (ModuleChecker -ModuleName $ModuleName)) {
-        Write-Host "Importing module '$ModuleName'..."
-        Import-Module $ModuleName
-        Write-Host "Module '$ModuleName' imported successfully."
-    }
-    else {
-        Write-Host "Module '$ModuleName' is already imported."
-    }
-}
 
 # Ensure module is installed and imported
 Install-ModuleIfNeeded -ModuleName $moduleName
@@ -81,139 +45,17 @@ catch {
 }
 
 # Asking for credentials once
-$cred = Get-Credential
+$cred = Get-CredentialWithRetries -MaxAttempts 3
 if (-not $cred) {
-    Write-Host "No identifier provided. The script will end."
+    Write-Host "Script terminating due to lack of valid credentials."
     exit
 }
 
 # Starting a job for each site
-foreach ($site in $listeSites) {
-
-    # Launch a job if the number of jobs in progress is less than the limit
-    while ($runningJobs.Count -ge $jobLimit) {
-        # Waiting for a job to finish
-        $completedJob = Wait-Job -Job $runningJobs -Any
-        $runningJobs = $runningJobs | Where-Object { $_.Id -ne $completedJob.Id }
-    }
-
-    Write-Host "Start of site processing : $($site.Url)"
-
-    $job = Start-Job -ScriptBlock {
-
-        # Function to process each SharePoint site
-        function ProcessSite {
-            param (
-                [Parameter(Mandatory = $true)]
-                [PSCustomObject]$site,
-
-                [Parameter(Mandatory = $true)]
-                [System.Management.Automation.PSCredential]$cred
-            )
-
-            $pageSize = 1000
-
-            # Initializing local lists
-            $localSites = @()
-            $localLibraries = @()
-            $localFiles = @()
-
-            try {
-                try {
-                    # Connection to each site
-                    $siteConnection = Connect-PnPOnline -Url $site.Url -Credentials $cred -ReturnConnection
-
-                    # Retrieving the information from the site
-                    $web = Get-PnPWeb -Connection $siteConnection
-
-                    # Creating custom object for site information
-                    $siteInfo = [PSCustomObject]@{
-                        Title   = $web.Title
-                        SiteUrl = $web.Url
-                        Owner   = $web.Owner
-                    }
-                    $localSites += $siteInfo
-                }
-                catch [System.Net.WebException] {
-                    Write-Host "Network error connecting to SharePoint: $_"
-                }
-                catch [Microsoft.SharePoint.Client.IdcrlException] {
-                    Write-Host "SharePoint authentication error: $_"
-                }
-                catch {
-                    Write-Host "Unknown error connecting to SharePoint: $_"
-                }
-
-                try {
-                    # Retrieving all the document libraries on the site
-                    $libraries = Get-PnPList -Connection $siteConnection | Where-Object { $_.BaseTemplate -eq 101 }
-
-                    foreach ($library in $libraries) {
-                        # Adding the library information to the $allLibraries list
-                        $libraryInfo = [PSCustomObject]@{
-                            SiteUrl      = $site.Url
-                            LibraryTitle = $library.Title
-                            TotalSize    = 0  # Initializing the total library size
-                            FileCount    = 0  # Initializing the number of files in the library
-                        }
-                        $localLibraries += $libraryInfo
-
-                        try {
-                            # Recovering all the files and folders from each library
-                            $listItems = Get-PnPListItem -List $library -PageSize $pageSize -Connection $siteConnection
-
-                            foreach ($item in $listItems) {
-                                $fileInfo = [PSCustomObject]@{
-                                    SiteUrl       = $site.Url
-                                    Library       = $library.Title
-                                    FileName      = $item.FieldValues.FileLeafRef
-                                    FilePath      = $item.FieldValues.FileDirRef
-                                    FileSize      = $item.FieldValues.File_x0020_Size
-                                    CreatedDate   = $item.FieldValues.Created
-                                    ModifiedDate  = $item.FieldValues.Modified
-                                    FileExtension = [System.IO.Path]::GetExtension($item.FieldValues.FileLeafRef)
-                                }
-                                $localFiles += $fileInfo
-
-                                # Adding the file size to the total size of the library
-                                $libraryInfo.TotalSize += $item.FieldValues.File_x0020_Size
-
-                                # Updating the number of files in the library
-                                $libraryInfo.FileCount++
-                            }
-                        }
-                        catch {
-                            Write-Host "Error retrieving files and folders from site $($site.Url) : $_"
-                        }
-                    }
-                }
-                catch {
-                    Write-Host "Error retrieving document libraries from site $($site.Url) : $_"
-                }
-            }
-            catch [Microsoft.SharePoint.Client.ClientRequestException] {
-                Write-Host "SharePoint site query error $($site.Url) : $_"
-            }
-            catch [System.Net.WebException] {
-                Write-Host "Network error connecting to SharePoint site $($site.Url) : $_"
-            }
-            catch {
-                Write-Host "Unknown error connecting or retrieving site data $($site.Url) : $_"
-            }
-
-            # Returning an object containing all the lists
-            return @{
-                Sites     = $localSites
-                Libraries = $localLibraries
-                Files     = $localFiles
-            }
-        }
-
-        # Executing the ProcessSite function
-        ProcessSite -site $args[0] -cred $args[1]
-    } -ArgumentList $site, $cred
-    $runningJobs += $job
-}
+$listeSites | ForEach-Object -Parallel {
+    . "${using:path}SPSiteJobManager\ProcessSite.ps1"
+    ProcessSite -site $_ -cred $using:cred
+} -ThrottleLimit 10  
 
 Write-Host "Waiting for all jobs to finish..."
 # Waiting for all jobs to complete
@@ -251,7 +93,6 @@ foreach ($job in $jobs) {
         Write-Host "No data received or job encountered an error for job $($job.Id)"
     }
 }
-
 
 # Cleaning up the jobs
 Get-Job | Remove-Job

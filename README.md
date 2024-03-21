@@ -6,8 +6,13 @@ This repository contains a PowerShell script designed to fetch and manage storag
 
 ## Files Description
 
-- [Export-SharePointSitesList.ps1](Export-SharePointSitesList.ps1): This script exports a list of SharePoint sites along with their storage details.
+- [Export-SharePointSitesList.ps1](Export-SharePointSitesList.ps1): Exports a list of SharePoint sites along with their storage details.
 - [SPSiteJobManager.ps1](SPSiteJobManager.ps1): Manages jobs related to SharePoint sites, ensuring that storage information is up-to-date and accurate.
+- [InstallModuleIfNeeded.ps1](InstallModuleIfNeeded.ps1): Installs the necessary modules if they are not already installed.
+- [ImportModuleIfNeeded.ps1](ImportModuleIfNeeded.ps1): Checks whether the required PowerShell modules are installed and imports them if necessary.
+- [ModuleChecker.ps1](ModuleChecker.ps1): Verifies the availability of specific PowerShell modules.
+- [ProcessSite.ps1](ProcessSite.ps1): Contains functions for processing individual SharePoint sites.
+- [GetCredentialWithRetries.ps1](ProcessSite.ps1): Aids in securely obtaining user credentials with retry logic.
 
 ## Getting Started
 
@@ -15,8 +20,8 @@ To use these scripts, you should have administrative access to the SharePoint si
 
 ### Prerequisites
 
-- PowerShell 5.1 or higher
-- SharePoint Online Management Shell
+- PowerShell 7
+- PnP.PowerShell Module
 
 ### Installation
 
@@ -39,7 +44,7 @@ To use these scripts, you should have administrative access to the SharePoint si
 
 ## Contributing
 
-Contributions to this project are welcome. Please feel free to fork the repository, make changes, and submit pull requests.
+Contributions are welcome! Please fork the repository, make your changes, and submit a pull request. We appreciate your efforts to improve the project.
 
 ## License
 
